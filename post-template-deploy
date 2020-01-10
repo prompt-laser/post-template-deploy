@@ -44,7 +44,9 @@ hostname $newhostname
 printf "Would you like to add a new user[y/n] default is yes: "
 if [[ -z $(Confirm) ]];
 then
-	printf "Adding new user...\n"
+	printf "Downloading tools for new user creation...\n"
+	apt update
+	apt install whois -y
 	read -p "New username: " username
 	read -s -p "Password for new user: " password
 	useradd -m -U -d /home/$username -s /bin/bash -p $(mkpasswd $password) $username
