@@ -1,0 +1,79 @@
+#!/bin/bash
+
+function Confirm {
+	read -n 1 input
+	if [ -z $input ];
+	then
+		true
+	elif [ $input = "n" ];
+	then
+		echo "Skipping..."
+	elif [ $input = "N" ];
+	then
+		echo "Skipping..."
+	else
+		true
+	fi
+}
+
+if [ $(whoami) != "root" ];
+then
+	printf "This script must be run as root\n"
+	exit
+fi
+
+printf "Welcome to the Breaking-Networks post-deployment script for VMs\n"
+read -n 1 -p "Y/y to continue. Any other key to exit: " confirm
+if [ -z $confirm ];
+then
+	printf "\n"
+	exit
+fi
+
+if [ $confirm != "y" ] && [ $confirm != "Y" ];
+then
+	printf "\n"
+	exit
+fi
+
+printf "\nCarrying on...\n"
+read -p "Enter a new hostname: " newhostname
+echo $newhostname | tee /etc/hostname
+hostname $newhostname
+
+printf "Would you like to add a new user[y/n] default is yes: "
+if [[ -z $(Confirm) ]];
+then
+	printf "Adding new user...\n"
+	read -p "New username: " username
+	read -s -p "Password for new user: " password
+	useradd -m -U -d /home/$username -s /bin/bash -p $(mkpasswd $password) $username
+	printf "\nNew user added!\n"
+	printf "Add the new user to the sudoers file? [y/n] default is yes: "
+	if [[ -z $(Confirm) ]];
+	then
+		usermod -aG sudo $username
+	fi
+	printf "\nUser added to sudoers file!\n"
+else
+	printf "\nSkipping new user creation\n"
+fi
+
+if [[ ! -z $(which mysql) ]]
+then
+	printf "Would you like to secure the mysql installation now[y/n] default is yes: "
+	if [[ -z $(Confirm) ]];
+	then
+		printf "\n"
+		mysql_secure_installation
+	fi
+fi
+
+printf "\nPost deployment script is now done!\n"
+printf "Restart now to finish applying changes? [y/n] default is yes: "
+if [[ -z $(Confirm) ]];
+then
+	shutdown -r now
+fi
+
+printf "\n"
